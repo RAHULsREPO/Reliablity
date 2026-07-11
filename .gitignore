@@ -1,0 +1,21 @@
+# Qt Creator and build configurations
+*.pro.user
+*.pro.user.*
+build-*
+*.autosave
+
+# Compiles / Object files
+*.exe
+*.o
+*.obj
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+
+# Temporary and OS files
+.DS_Store
+Thumbs.db
+/scratch/
+/tmp/

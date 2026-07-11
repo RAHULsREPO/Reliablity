@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>cybersecurity_bg.png</file>
+    </qresource>
+</RCC>
