@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include "logincontroller.h"
+#include "reliabilitycontroller.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,6 +19,9 @@ int main(int argc, char *argv[])
 
     LoginController loginController;
     engine.rootContext()->setContextProperty("loginController", &loginController);
+
+    ReliabilityController reliabilityController;
+    engine.rootContext()->setContextProperty("reliabilityController", &reliabilityController);
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

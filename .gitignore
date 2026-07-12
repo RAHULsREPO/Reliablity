@@ -3,6 +3,10 @@
 *.pro.user.*
 build-*
 *.autosave
+.qmake.stash
+.qtc_clangd/
+Makefile*
+object_script.*
 
 # Compiles / Object files
 *.exe
@@ -13,6 +17,8 @@ build-*
 *.a
 *.so
 *.dylib
+debug/
+release/
 
 # Temporary and OS files
 .DS_Store

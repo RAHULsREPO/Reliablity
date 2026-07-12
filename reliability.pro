@@ -10,10 +10,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         logincontroller.cpp \
+        reliabilitycontroller.cpp \
         db/sqlconnection.cpp
 
 HEADERS += \
         logincontroller.h \
+        reliabilitycontroller.h \
         db/sqlconnection.h
 
 RESOURCES += qml.qrc
