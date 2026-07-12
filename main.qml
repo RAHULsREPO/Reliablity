@@ -344,7 +344,7 @@ ApplicationWindow {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    feedbackText.text = "Security notice: Contact system administrators at support@securecorp.com to reset credentials."
+                                    feedbackText.text = "Security notice: Contact system administrators to reset credentials."
                                     feedbackBox.color = "#1c1917"
                                     feedbackBox.border.color = "#44403c"
                                     feedbackText.color = "#fbbf24"
