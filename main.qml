@@ -9,9 +9,8 @@ ApplicationWindow {
     height: 600
     minimumWidth: 950
     minimumHeight: 600
-    maximumWidth: 950
-    maximumHeight: 600
     visible: true
+    visibility: Window.Maximized
     color: "#070b13"
 
     // Authentication state
