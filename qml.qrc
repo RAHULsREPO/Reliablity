@@ -2,5 +2,16 @@
     <qresource prefix="/">
         <file>main.qml</file>
         <file>cybersecurity_bg.png</file>
+        <file>views/SubsystemsGridView.qml</file>
+        <file>views/HomeView.qml</file>
+        <file>views/DashboardView.qml</file>
+        <file>views/RbdDiagramView.qml</file>
+        <file>views/RgaView.qml</file>
+        <file>views/LruDetailsView.qml</file>
+        <file>views/LruReplacementView.qml</file>
+        <file>views/LruFailuresView.qml</file>
+        <file>views/SparesView.qml</file>
+        <file>views/AlertsView.qml</file>
+        <file>views/DocumentsView.qml</file>
     </qresource>
 </RCC>

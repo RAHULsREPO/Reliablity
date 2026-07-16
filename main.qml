@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "views"
 
 ApplicationWindow {
     id: window
@@ -25,6 +26,11 @@ ApplicationWindow {
     property string subsystemTemp: "38°C"
     property var subsystemLogs: []
 
+    // Navigation state
+    property string currentSubView: "dashboard" // "home", "dashboard", "rbd", "rga", "lru_details", "lru_replacement", "lru_failures", "spares", "alerts", "documents"
+    property bool inSubsystemMode: false      // Start in Master grid view, user clicks a subsystem to go inside
+    property bool analyticsExpanded: true     // Expand/collapse state for Analytics sub-menu
+
     // Updates all stats and triggers chart repaint
     function loadSubsystem(subName) {
         selectedSubsystem = subName
@@ -36,7 +42,7 @@ ApplicationWindow {
         subsystemTemp = stats.temp
         
         subsystemLogs = reliabilityController.getLogEntries(subName)
-        chartCanvas.historyData = reliabilityController.getHistoryData(subName)
+        dashboardView.historyData = reliabilityController.getHistoryData(subName)
     }
 
     Item {
@@ -434,7 +440,7 @@ ApplicationWindow {
         // 2. SUBSYSTEM RELIABILITY DASHBOARD (visible when loggedIn)
         // ==========================================
         ColumnLayout {
-            id: dashboardView
+            id: mainConsoleView
             anchors.fill: parent
             spacing: 0
             visible: window.loggedIn
@@ -562,135 +568,479 @@ ApplicationWindow {
                         anchors.margins: 15
                         spacing: 10
 
-                        Text {
-                            text: "MONITORED NODES"
-                            color: "#64748b"
-                            font.pixelSize: 10
-                            font.bold: true
-                            font.letterSpacing: 1.5
-                            font.family: "Segoe UI"
-                            Layout.bottomMargin: 10
-                        }
-
-                        // Subsystem Buttons List
+                        // 1. Sidebar in master list mode (All Subsystems)
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            Layout.fillHeight: true
+                            visible: !window.inSubsystemMode
+                            spacing: 10
 
-                            Repeater {
-                                model: reliabilityController.subsystems
+                            Text {
+                                text: "MONITORED NODES"
+                                color: "#64748b"
+                                font.pixelSize: 10
+                                font.bold: true
+                                font.letterSpacing: 1.5
+                                font.family: "Segoe UI"
+                                Layout.bottomMargin: 10
+                            }
 
-                                Button {
-                                    id: subBtn
-                                    Layout.fillWidth: true
-                                    implicitHeight: 48
-                                    
-                                    // Custom property to bind selection
-                                    property bool isSelected: window.selectedSubsystem === modelData
-                                    // Color mappings based on subsystem state for visual feedback
-                                    property string statusColor: {
-                                        if (modelData === "SIGINT") return "#f87171"; // degraded
-                                        if (modelData === "WCS") return "#fbbf24"; // nominal warning
-                                        return "#34d399"; // operational
-                                    }
+                            // Subsystem Buttons List
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
 
-                                    background: Rectangle {
-                                        color: subBtn.isSelected ? "#131c33" : (subBtn.hovered ? "#0f172a" : "#070b13")
-                                        border.color: subBtn.isSelected ? "#00f0ff" : "#1e293b"
-                                        border.width: 1
-                                        radius: 6
+                                Repeater {
+                                    model: reliabilityController.subsystems
 
-                                        // Highlight accent glow
-                                        Rectangle {
-                                            anchors.left: parent.left
-                                            anchors.top: parent.top
-                                            anchors.bottom: parent.bottom
-                                            width: 4
-                                            color: subBtn.statusColor
-                                            visible: subBtn.isSelected
-                                            radius: 2
+                                    Button {
+                                        id: subBtn
+                                        Layout.fillWidth: true
+                                        implicitHeight: 48
+                                        
+                                        property bool isSelected: window.selectedSubsystem === modelData
+                                        property string statusColor: {
+                                            if (modelData === "SIGINT") return "#f87171"; // degraded
+                                            if (modelData === "WCS") return "#fbbf24"; // nominal warning
+                                            return "#34d399"; // operational
                                         }
 
-                                        Behavior on color { ColorAnimation { duration: 150 } }
-                                    }
+                                        background: Rectangle {
+                                            color: subBtn.isSelected ? "#131c33" : (subBtn.hovered ? "#0f172a" : "#070b13")
+                                            border.color: subBtn.isSelected ? "#00f0ff" : "#1e293b"
+                                            border.width: 1
+                                            radius: 6
 
-                                    contentItem: RowLayout {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 15
-                                        anchors.rightMargin: 15
-                                        spacing: 10
-
-                                        Rectangle {
-                                            width: 6
-                                            height: 6
-                                            radius: 3
-                                            color: subBtn.statusColor
-                                        }
-
-                                        Text {
-                                            text: modelData
-                                            color: subBtn.isSelected ? "#ffffff" : "#94a3b8"
-                                            font.pixelSize: 13
-                                            font.bold: true
-                                            font.family: "Segoe UI"
-                                        }
-
-                                        Item { Layout.fillWidth: true }
-
-                                        Text {
-                                            text: {
-                                                if (modelData === "TFCS") return "99.8%";
-                                                if (modelData === "WCS") return "98.6%";
-                                                if (modelData === "SIGINT") return "94.1%";
-                                                if (modelData === "NAVSUITE") return "99.9%";
-                                                if (modelData === "RADAR") return "99.1%";
-                                                if (modelData === "UCS") return "99.4%";
-                                                if (modelData === "SA") return "99.7%";
-                                                return "100%";
+                                            Rectangle {
+                                                anchors.left: parent.left
+                                                anchors.top: parent.top
+                                                anchors.bottom: parent.bottom
+                                                width: 4
+                                                color: subBtn.statusColor
+                                                visible: subBtn.isSelected
+                                                radius: 2
                                             }
-                                            color: subBtn.statusColor
-                                            font.pixelSize: 11
-                                            font.family: "Segoe UI"
+
+                                            Behavior on color { ColorAnimation { duration: 150 } }
+                                        }
+
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 15
+                                            anchors.rightMargin: 15
+                                            spacing: 10
+
+                                            Rectangle {
+                                                width: 6
+                                                height: 6
+                                                radius: 3
+                                                color: subBtn.statusColor
+                                            }
+
+                                            Text {
+                                                text: modelData
+                                                color: subBtn.isSelected ? "#ffffff" : "#94a3b8"
+                                                font.pixelSize: 13
+                                                font.bold: true
+                                                font.family: "Segoe UI"
+                                            }
+
+                                            Item { Layout.fillWidth: true }
+
+                                            Text {
+                                                text: {
+                                                    if (modelData === "TFCS") return "99.8%";
+                                                    if (modelData === "WCS") return "98.6%";
+                                                    if (modelData === "SIGINT") return "94.1%";
+                                                    if (modelData === "NAVSUITE") return "99.9%";
+                                                    if (modelData === "RADAR") return "99.1%";
+                                                    if (modelData === "UCS") return "99.4%";
+                                                    if (modelData === "SA") return "99.7%";
+                                                    return "100%";
+                                                }
+                                                color: subBtn.statusColor
+                                                font.pixelSize: 11
+                                                font.family: "Segoe UI"
+                                            }
+                                        }
+
+                                        onClicked: {
+                                            window.loadSubsystem(modelData)
+                                            window.inSubsystemMode = true
+                                            window.currentSubView = "dashboard"
+                                        }
+                                    }
+                                }
+                            }
+                            Item { Layout.fillHeight: true }
+                        }
+
+                        // 2. Sidebar in subsystem detail mode
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.inSubsystemMode
+                            spacing: 6
+
+                            // Back Button
+                            Button {
+                                id: backBtn
+                                Layout.fillWidth: true
+                                implicitHeight: 32
+                                background: Rectangle {
+                                    color: backBtn.hovered ? "#1e293b" : "transparent"
+                                    radius: 4
+                                }
+                                contentItem: RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    spacing: 8
+                                    Text {
+                                        text: "←"
+                                        color: "#00f0ff"
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                    }
+                                    Text {
+                                        text: "All Subsystems"
+                                        color: "#64748b"
+                                        font.pixelSize: 12
+                                        font.bold: true
+                                        font.family: "Segoe UI"
+                                    }
+                                }
+                                onClicked: {
+                                    window.inSubsystemMode = false
+                                }
+                            }
+
+                            // Subsystem Name Header
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: 45
+                                color: "#131c33"
+                                border.color: "#00f0ff"
+                                border.width: 1
+                                radius: 6
+                                Layout.topMargin: 5
+                                Layout.bottomMargin: 10
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 15
+                                    anchors.rightMargin: 15
+                                    spacing: 8
+
+                                    Rectangle {
+                                        width: 8
+                                        height: 8
+                                        radius: 4
+                                        color: {
+                                            if (window.subsystemStatus === "DEGRADED") return "#f87171";
+                                            if (window.subsystemStatus === "NOMINAL") return "#fbbf24";
+                                            return "#34d399";
                                         }
                                     }
 
-                                    onClicked: {
-                                        window.loadSubsystem(modelData)
+                                    Text {
+                                        text: window.selectedSubsystem
+                                        color: "#ffffff"
+                                        font.pixelSize: 15
+                                        font.bold: true
+                                        font.family: "Segoe UI"
+                                    }
+                                }
+                            }
+
+                            ScrollView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+
+                                ColumnLayout {
+                                    width: parent.width - 15
+                                    spacing: 4
+
+                                    Button {
+                                        id: menuHome
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "home"
+                                        background: Rectangle {
+                                            color: menuHome.active ? "#131c33" : (menuHome.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuHome.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "🏠"; color: menuHome.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "Home"; color: menuHome.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuHome.active }
+                                        }
+                                        onClicked: window.currentSubView = "home"
+                                    }
+
+                                    Button {
+                                        id: menuDashboard
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "dashboard"
+                                        background: Rectangle {
+                                            color: menuDashboard.active ? "#131c33" : (menuDashboard.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuDashboard.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "📊"; color: menuDashboard.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "Dashboard"; color: menuDashboard.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuDashboard.active }
+                                        }
+                                        onClicked: window.currentSubView = "dashboard"
+                                    }
+
+                                    Button {
+                                        id: menuRbd
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "rbd"
+                                        background: Rectangle {
+                                            color: menuRbd.active ? "#131c33" : (menuRbd.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuRbd.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "🔗"; color: menuRbd.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "RBD Diagram"; color: menuRbd.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuRbd.active }
+                                        }
+                                        onClicked: window.currentSubView = "rbd"
+                                    }
+
+                                    // Analytics Collapsible Header
+                                    Button {
+                                        id: menuAnalyticsHeader
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        background: Rectangle {
+                                            color: menuAnalyticsHeader.hovered ? "#0f172a" : "transparent"
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "📈"; color: "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "Analytics"; color: "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: true }
+                                            Item { Layout.fillWidth: true }
+                                            Text { text: window.analyticsExpanded ? "▼" : "▶"; color: "#64748b"; font.pixelSize: 10 }
+                                        }
+                                        onClicked: window.analyticsExpanded = !window.analyticsExpanded
+                                    }
+
+                                    // Sub-items inside Analytics
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        visible: window.analyticsExpanded
+                                        spacing: 2
+                                        Layout.leftMargin: 15
+
+                                        Button {
+                                            id: menuRga
+                                            Layout.fillWidth: true
+                                            implicitHeight: 34
+                                            property bool active: window.currentSubView === "rga"
+                                            background: Rectangle {
+                                                color: menuRga.active ? "#131c33" : (menuRga.hovered ? "#0f172a" : "transparent")
+                                                border.color: menuRga.active ? "#00f0ff" : "transparent"
+                                                border.width: 1
+                                                radius: 4
+                                            }
+                                            contentItem: RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 12
+                                                spacing: 10
+                                                Text { text: "📉"; color: menuRga.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 12 }
+                                                Text { text: "RGA"; color: menuRga.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 12; font.family: "Segoe UI"; font.bold: menuRga.active }
+                                            }
+                                            onClicked: window.currentSubView = "rga"
+                                        }
+                                    }
+
+                                    // Remaining Main Menu Items
+                                    Button {
+                                        id: menuLruDetails
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "lru_details"
+                                        background: Rectangle {
+                                            color: menuLruDetails.active ? "#131c33" : (menuLruDetails.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuLruDetails.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "📋"; color: menuLruDetails.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "LRU Details"; color: menuLruDetails.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuLruDetails.active }
+                                        }
+                                        onClicked: window.currentSubView = "lru_details"
+                                    }
+
+                                    Button {
+                                        id: menuLruReplacement
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "lru_replacement"
+                                        background: Rectangle {
+                                            color: menuLruReplacement.active ? "#131c33" : (menuLruReplacement.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuLruReplacement.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "🔄"; color: menuLruReplacement.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "LRU Replacement"; color: menuLruReplacement.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuLruReplacement.active }
+                                        }
+                                        onClicked: window.currentSubView = "lru_replacement"
+                                    }
+
+                                    Button {
+                                        id: menuLruFailures
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "lru_failures"
+                                        background: Rectangle {
+                                            color: menuLruFailures.active ? "#131c33" : (menuLruFailures.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuLruFailures.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "⚠️"; color: menuLruFailures.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "LRU Failures"; color: menuLruFailures.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuLruFailures.active }
+                                        }
+                                        onClicked: window.currentSubView = "lru_failures"
+                                    }
+
+                                    Button {
+                                        id: menuSpares
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "spares"
+                                        background: Rectangle {
+                                            color: menuSpares.active ? "#131c33" : (menuSpares.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuSpares.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "📦"; color: menuSpares.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "Spares"; color: menuSpares.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuSpares.active }
+                                        }
+                                        onClicked: window.currentSubView = "spares"
+                                    }
+
+                                    Button {
+                                        id: menuAlerts
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "alerts"
+                                        background: Rectangle {
+                                            color: menuAlerts.active ? "#131c33" : (menuAlerts.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuAlerts.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "🔔"; color: menuAlerts.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "Alerts"; color: menuAlerts.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuAlerts.active }
+                                        }
+                                        onClicked: window.currentSubView = "alerts"
+                                    }
+
+                                    Button {
+                                        id: menuDocuments
+                                        Layout.fillWidth: true
+                                        implicitHeight: 36
+                                        property bool active: window.currentSubView === "documents"
+                                        background: Rectangle {
+                                            color: menuDocuments.active ? "#131c33" : (menuDocuments.hovered ? "#0f172a" : "transparent")
+                                            border.color: menuDocuments.active ? "#00f0ff" : "transparent"
+                                            border.width: 1
+                                            radius: 4
+                                        }
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 12
+                                            spacing: 10
+                                            Text { text: "📄"; color: menuDocuments.active ? "#00f0ff" : "#94a3b8"; font.pixelSize: 13 }
+                                            Text { text: "Documents"; color: menuDocuments.active ? "#ffffff" : "#94a3b8"; font.pixelSize: 13; font.family: "Segoe UI"; font.bold: menuDocuments.active }
+                                        }
+                                        onClicked: window.currentSubView = "documents"
                                     }
                                 }
                             }
                         }
-
-                        Item { Layout.fillHeight: true } // Spacer
                     }
                 }
 
-                // Right Workspace - Metrics Cards, Chart Canvas & Logs
+                // Right Workspace - Grid overview or detailed panels
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     color: "#070b13"
 
+                    // Master View: Grid of all subsystems
+                    SubsystemsGridView {
+                        anchors.fill: parent
+                        anchors.margins: 20
+                        visible: !window.inSubsystemMode
+                    }
+
+                    // Detail View: Display selected subsystem node console
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 20
-                        spacing: 20
+                        visible: window.inSubsystemMode
+                        spacing: 15
 
-                        // Detail Header
+                        // Subsystem Page Detail Header
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 10
 
                             Text {
-                                text: window.selectedSubsystem
+                                text: window.selectedSubsystem + " > " + window.currentSubView.toUpperCase()
                                 color: "#ffffff"
-                                font.pixelSize: 22
+                                font.pixelSize: 20
                                 font.bold: true
                                 font.family: "Segoe UI"
                             }
 
                             Rectangle {
-                                width: 80
+                                width: 90
                                 height: 20
                                 radius: 4
                                 color: {
@@ -730,281 +1080,66 @@ ApplicationWindow {
                             }
                         }
 
-                        // Summary Statistics Cards
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 15
-
-                            // Card 1: Uptime
-                            Rectangle {
-                                Layout.fillWidth: true
-                                implicitHeight: 65
-                                color: "#090e1a"
-                                border.color: "#1e293b"
-                                border.width: 1
-                                radius: 6
-
-                                ColumnLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-                                    Text { text: "AVERAGE UPTIME"; color: "#64748b"; font.pixelSize: 9; font.bold: true; font.family: "Segoe UI"; Layout.alignment: Qt.AlignHCenter }
-                                    Text { text: window.subsystemUptime; color: "#ffffff"; font.pixelSize: 18; font.bold: true; font.family: "Segoe UI"; Layout.alignment: Qt.AlignHCenter }
-                                }
-                            }
-
-                            // Card 2: Failure Alerts
-                            Rectangle {
-                                Layout.fillWidth: true
-                                implicitHeight: 65
-                                color: "#090e1a"
-                                border.color: "#1e293b"
-                                border.width: 1
-                                radius: 6
-
-                                ColumnLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-                                    Text { text: "ACTIVE ALERTS"; color: "#64748b"; font.pixelSize: 9; font.bold: true; font.family: "Segoe UI"; Layout.alignment: Qt.AlignHCenter }
-                                    Text {
-                                        text: window.subsystemFailures > 0 ? "⚠ " + window.subsystemFailures : "✓ OK";
-                                        color: window.subsystemFailures > 0 ? "#f87171" : "#34d399";
-                                        font.pixelSize: 18;
-                                        font.bold: true;
-                                        font.family: "Segoe UI";
-                                        Layout.alignment: Qt.AlignHCenter
-                                    }
-                                }
-                            }
-
-                            // Card 3: MTBF
-                            Rectangle {
-                                Layout.fillWidth: true
-                                implicitHeight: 65
-                                color: "#090e1a"
-                                border.color: "#1e293b"
-                                border.width: 1
-                                radius: 6
-
-                                ColumnLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-                                    Text { text: "MTBF RATING"; color: "#64748b"; font.pixelSize: 9; font.bold: true; font.family: "Segoe UI"; Layout.alignment: Qt.AlignHCenter }
-                                    Text { text: window.subsystemMtbf; color: "#ffffff"; font.pixelSize: 18; font.bold: true; font.family: "Segoe UI"; Layout.alignment: Qt.AlignHCenter }
-                                }
-                            }
-
-                            // Card 4: Operating Temp
-                            Rectangle {
-                                Layout.fillWidth: true
-                                implicitHeight: 65
-                                color: "#090e1a"
-                                border.color: "#1e293b"
-                                border.width: 1
-                                radius: 6
-
-                                ColumnLayout {
-                                    anchors.centerIn: parent
-                                    spacing: 4
-                                    Text { text: "OPERATING TEMP"; color: "#64748b"; font.pixelSize: 9; font.bold: true; font.family: "Segoe UI"; Layout.alignment: Qt.AlignHCenter }
-                                    Text {
-                                        text: window.subsystemTemp;
-                                        color: parseInt(window.subsystemTemp) > 50 ? "#f87171" : "#ffffff";
-                                        font.pixelSize: 18;
-                                        font.bold: true;
-                                        font.family: "Segoe UI";
-                                        Layout.alignment: Qt.AlignHCenter
-                                    }
-                                }
-                            }
-                        }
-
-                        // Chart Workspace (Line Graph Canvas)
-                        Rectangle {
+                        // Component Subviews Container
+                        HomeView {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            color: "#090e1a"
-                            border.color: "#1e293b"
-                            border.width: 1
-                            radius: 8
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 15
-                                spacing: 10
-
-                                Text {
-                                    text: "RELIABILITY CURVE (LAST 12 HOURS)"
-                                    color: "#94a3b8"
-                                    font.pixelSize: 10
-                                    font.bold: true
-                                    font.letterSpacing: 1
-                                    font.family: "Segoe UI"
-                                }
-
-                                Canvas {
-                                    id: chartCanvas
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-
-                                    property var historyData: []
-                                    property real animFactor: 0.0
-
-                                    // Refresh drawing when history changes
-                                    onHistoryDataChanged: {
-                                        animFactor = 0.0
-                                        animFactor = 1.0
-                                        chartCanvas.requestPaint()
-                                    }
-
-                                    onAnimFactorChanged: {
-                                        chartCanvas.requestPaint()
-                                    }
-
-                                    onPaint: {
-                                        var ctx = getContext("2d");
-                                        ctx.reset();
-
-                                        var w = width;
-                                        var h = height;
-                                        var paddingLeft = 40;
-                                        var paddingRight = 15;
-                                        var paddingTop = 15;
-                                        var paddingBottom = 25;
-
-                                        var chartW = w - paddingLeft - paddingRight;
-                                        var chartH = h - paddingTop - paddingBottom;
-
-                                        // Horizontal Grid lines & Y Axis Labels (Draw range: 90% - 100%)
-                                        ctx.strokeStyle = "#1e293b";
-                                        ctx.lineWidth = 1;
-                                        ctx.font = "9px Segoe UI";
-                                        ctx.fillStyle = "#64748b";
-
-                                        var minVal = 90.0;
-                                        var maxVal = 100.0;
-                                        var gridCountY = 5;
-                                        for (var i = 0; i < gridCountY; i++) {
-                                            var val = minVal + (maxVal - minVal) * (i / (gridCountY - 1));
-                                            var y = h - paddingBottom - (i / (gridCountY - 1)) * chartH;
-
-                                            ctx.beginPath();
-                                            ctx.moveTo(paddingLeft, y);
-                                            ctx.lineTo(w - paddingRight, y);
-                                            ctx.stroke();
-
-                                            ctx.fillText(val.toFixed(1) + "%", 5, y + 3);
-                                        }
-
-                                        if (!historyData || historyData.length === 0) return;
-
-                                        // Interpolate points coordinates
-                                        var points = [];
-                                        var count = historyData.length;
-                                        for (var j = 0; j < count; j++) {
-                                            var val = historyData[j];
-                                            var normY = (val - minVal) / (maxVal - minVal);
-                                            if (normY < 0) normY = 0;
-                                            if (normY > 1) normY = 1;
-
-                                            // Apply animation factor
-                                            var animY = normY * animFactor;
-
-                                            var x = paddingLeft + (j / (count - 1)) * chartW;
-                                            var y = h - paddingBottom - animY * chartH;
-                                            points.push({x: x, y: y});
-                                        }
-
-                                        // Draw Area gradient fill
-                                        var gradient = ctx.createLinearGradient(0, paddingTop, 0, h - paddingBottom);
-                                        gradient.addColorStop(0, "rgba(0, 240, 255, 0.25)");
-                                        gradient.addColorStop(1, "rgba(0, 240, 255, 0.0)");
-
-                                        ctx.fillStyle = gradient;
-                                        ctx.beginPath();
-                                        ctx.moveTo(points[0].x, h - paddingBottom);
-                                        for (var k = 0; k < points.length; k++) {
-                                            ctx.lineTo(points[k].x, points[k].y);
-                                        }
-                                        ctx.lineTo(points[points.length - 1].x, h - paddingBottom);
-                                        ctx.closePath();
-                                        ctx.fill();
-
-                                        // Draw Line
-                                        ctx.strokeStyle = "#00f0ff";
-                                        ctx.lineWidth = 2.5;
-                                        ctx.beginPath();
-                                        ctx.moveTo(points[0].x, points[0].y);
-                                        for (var k = 1; k < points.length; k++) {
-                                            ctx.lineTo(points[k].x, points[k].y);
-                                        }
-                                        ctx.stroke();
-
-                                        // Draw Point Circles
-                                        ctx.fillStyle = "#ffffff";
-                                        ctx.strokeStyle = "#0083b0";
-                                        ctx.lineWidth = 1.5;
-                                        for (var k = 0; k < points.length; k++) {
-                                            ctx.beginPath();
-                                            ctx.arc(points[k].x, points[k].y, 3, 0, 2 * Math.PI);
-                                            ctx.fill();
-                                            ctx.stroke();
-                                        }
-
-                                        // Draw X-axis timestamps
-                                        ctx.fillStyle = "#64748b";
-                                        for (var k = 0; k < points.length; k += 2) {
-                                            var hour = (k * 2);
-                                            var label = (hour < 10 ? "0" : "") + hour + ":00";
-                                            ctx.fillText(label, points[k].x - 12, h - 8);
-                                        }
-                                    }
-
-                                    Behavior on animFactor {
-                                        NumberAnimation { duration: 600; easing.type: Easing.OutQuad }
-                                    }
-                                }
-                            }
+                            visible: window.currentSubView === "home"
                         }
 
-                        // Retro CRT Activity Log Console
-                        Rectangle {
+                        DashboardView {
+                            id: dashboardView
                             Layout.fillWidth: true
-                            implicitHeight: 120
-                            color: "#050912"
-                            border.color: "#1e293b"
-                            border.width: 1
-                            radius: 6
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "dashboard"
+                        }
 
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 12
-                                spacing: 8
+                        RbdDiagramView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "rbd"
+                        }
 
-                                Text {
-                                    text: "SYSTEM EVENT LOGS"
-                                    color: "#64748b"
-                                    font.pixelSize: 9
-                                    font.bold: true
-                                    font.family: "Segoe UI"
-                                }
+                        RgaView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "rga"
+                        }
 
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 4
+                        LruDetailsView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "lru_details"
+                        }
 
-                                    Repeater {
-                                        model: window.subsystemLogs
+                        LruReplacementView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "lru_replacement"
+                        }
 
-                                        Text {
-                                            text: ">  " + modelData
-                                            color: "#34d399"
-                                            font.pixelSize: 11
-                                            font.family: "Consolas"
-                                            font.bold: true
-                                        }
-                                    }
-                                }
-                            }
+                        LruFailuresView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "lru_failures"
+                        }
+
+                        SparesView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "spares"
+                        }
+
+                        AlertsView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "alerts"
+                        }
+
+                        DocumentsView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: window.currentSubView === "documents"
                         }
                     }
                 }
@@ -1043,6 +1178,7 @@ ApplicationWindow {
         onTriggered: {
             window.loggedIn = true
             feedbackText.text = ""
+            window.inSubsystemMode = false
             window.loadSubsystem("TFCS") // Default system load
         }
     }
