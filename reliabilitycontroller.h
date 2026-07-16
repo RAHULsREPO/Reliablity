@@ -19,6 +19,8 @@ public:
     Q_INVOKABLE QVariantList getHistoryData(const QString &subsystem);
     Q_INVOKABLE QVariantMap getStats(const QString &subsystem);
     Q_INVOKABLE QVariantList getLogEntries(const QString &subsystem);
+    Q_INVOKABLE QVariantList getLruDetails(const QString &subsystem);
+    Q_INVOKABLE QVariantList getAllLogEntries();
 
 private:
     QStringList m_subsystems;

@@ -89,9 +89,25 @@ ApplicationWindow {
                 Rectangle {
                     anchors.fill: parent
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#cc000000" }
-                        GradientStop { position: 0.4; color: "#22001a33" }
-                        GradientStop { position: 1.0; color: "#f2070b13" }
+                        GradientStop {
+                            position: 0.0
+                            color: "#cc000000"
+                        }
+                        GradientStop {
+                            id: oceanFlowStop
+                            position: 0.45
+                            color: "#33002244"
+                            
+                            SequentialAnimation on color {
+                                loops: Animation.Infinite
+                                ColorAnimation { from: "#33002244"; to: "#44004488"; duration: 5000; easing.type: Easing.InOutQuad }
+                                ColorAnimation { from: "#44004488"; to: "#33002244"; duration: 5000; easing.type: Easing.InOutQuad }
+                            }
+                        }
+                        GradientStop {
+                            position: 1.0
+                            color: "#f2070b13"
+                        }
                     }
                 }
 
@@ -119,7 +135,7 @@ ApplicationWindow {
                             radius: 2
                         }
                         Text {
-                            text: "CORE SECURE"
+                            text: "RELIABILITY, AVAILABILITY & MAINTAINABILITY"
                             color: "#00f0ff"
                             font.pixelSize: 12
                             font.bold: true
@@ -129,7 +145,7 @@ ApplicationWindow {
                     }
 
                     Text {
-                        text: "INTELLIGENT DEFENSE PLATFORM"
+                        text: "RAM SOFTWARE"
                         color: "#ffffff"
                         font.pixelSize: 28
                         font.bold: true
@@ -203,7 +219,7 @@ ApplicationWindow {
                         Layout.fillWidth: true
 
                         Text {
-                            text: "Secure Authentication"
+                            text: "RAM Console Login"
                             color: "#ffffff"
                             font.pixelSize: 24
                             font.bold: true
@@ -211,7 +227,7 @@ ApplicationWindow {
                         }
 
                         Text {
-                            text: "Enter operator credentials to verify console access."
+                            text: "Enter credentials to access the RAM console."
                             color: "#64748b"
                             font.pixelSize: 13
                             font.family: "Segoe UI"
@@ -1012,11 +1028,168 @@ ApplicationWindow {
                     Layout.fillHeight: true
                     color: "#070b13"
 
-                    // Master View: Grid of all subsystems
-                    SubsystemsGridView {
+                    // Master View: Grid of all subsystems split with Logs & Alarms Panel
+                    RowLayout {
                         anchors.fill: parent
                         anchors.margins: 20
+                        spacing: 20
                         visible: !window.inSubsystemMode
+
+                        SubsystemsGridView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                        }
+
+                        // System Logs and Alarms Panel
+                        Rectangle {
+                            id: masterLogsPanel
+                            Layout.preferredWidth: 350
+                            Layout.fillHeight: true
+                            color: "#090e1a"
+                            border.color: "#1e293b"
+                            border.width: 1
+                            radius: 8
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 15
+                                spacing: 12
+
+                                // Title Section
+                                RowLayout {
+                                    spacing: 8
+                                    Text { text: "⚠️"; font.pixelSize: 14; color: "#00f0ff" }
+                                    Text {
+                                        text: "SYSTEM LOGS & ACTIVE ALARMS"
+                                        color: "#00f0ff"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        font.letterSpacing: 1
+                                        font.family: "Segoe UI"
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: "#1e293b" }
+
+                                // 1. Active Alarms Header
+                                Text {
+                                    text: "ACTIVE ALARMS (UNACKNOWLEDGED)"
+                                    color: "#64748b"
+                                    font.pixelSize: 9
+                                    font.bold: true
+                                    font.family: "Segoe UI"
+                                }
+
+                                // Active Alarms List
+                                ScrollView {
+                                    id: activeAlarmsScroll
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 120
+                                    clip: true
+
+                                    ColumnLayout {
+                                        width: activeAlarmsScroll.availableWidth - 15
+                                        spacing: 8
+
+                                        // Alarm 1: Critical latency
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            implicitHeight: 45
+                                            color: "#450a0a"
+                                            border.color: "#f87171"
+                                            border.width: 1
+                                            radius: 4
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 8
+                                                anchors.rightMargin: 8
+                                                spacing: 6
+
+                                                Rectangle { width: 6; height: 6; radius: 3; color: "#f87171" }
+                                                ColumnLayout {
+                                                    spacing: 1
+                                                    Text { text: "SIGINT Node sync latency exceeded"; color: "#ffffff"; font.bold: true; font.pixelSize: 10; font.family: "Segoe UI"; Layout.preferredWidth: 260; elide: Text.ElideRight }
+                                                    Text { text: "Raised at 22:12 | CRITICAL"; color: "#fca5a5"; font.pixelSize: 8; font.family: "Segoe UI" }
+                                                }
+                                            }
+                                        }
+
+                                        // Alarm 2: Warning voltage
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            implicitHeight: 45
+                                            color: "#1c1917"
+                                            border.color: "#fbbf24"
+                                            border.width: 1
+                                            radius: 4
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 8
+                                                anchors.rightMargin: 8
+                                                spacing: 6
+
+                                                Rectangle { width: 6; height: 6; radius: 3; color: "#fbbf24" }
+                                                ColumnLayout {
+                                                    spacing: 1
+                                                    Text { text: "WCS Battery charging voltage sag warning"; color: "#ffffff"; font.bold: true; font.pixelSize: 10; font.family: "Segoe UI"; Layout.preferredWidth: 260; elide: Text.ElideRight }
+                                                    Text { text: "Raised at 19:04 | WARNING"; color: "#fde68a"; font.pixelSize: 8; font.family: "Segoe UI" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: "#1e293b" }
+
+                                // 2. Live Logs Header
+                                Text {
+                                    text: "LIVE DIAGNOSTIC LOG ENTRIES"
+                                    color: "#64748b"
+                                    font.pixelSize: 9
+                                    font.bold: true
+                                    font.family: "Segoe UI"
+                                }
+
+                                // Live Logs List
+                                ScrollView {
+                                    id: liveLogsScroll
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+
+                                    ColumnLayout {
+                                        width: liveLogsScroll.availableWidth - 15
+                                        spacing: 6
+
+                                        Repeater {
+                                            model: reliabilityController.getAllLogEntries()
+
+                                            Rectangle {
+                                                Layout.fillWidth: true
+                                                implicitHeight: 38
+                                                color: "#070b13"
+                                                border.color: "#1e293b"
+                                                border.width: 1
+                                                radius: 4
+
+                                                Text {
+                                                    text: modelData
+                                                    color: modelData.indexOf("Warning") !== -1 ? "#fbbf24" : "#e2e8f0"
+                                                    font.pixelSize: 10
+                                                    font.family: "Consolas"
+                                                    anchors.fill: parent
+                                                    anchors.margins: 8
+                                                    verticalAlignment: Text.AlignVCenter
+                                                    elide: Text.ElideRight
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     // Detail View: Display selected subsystem node console

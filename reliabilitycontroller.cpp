@@ -1,4 +1,8 @@
 #include "reliabilitycontroller.h"
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QDebug>
 
 ReliabilityController::ReliabilityController(QObject *parent) : QObject(parent)
 {
@@ -123,4 +127,86 @@ QVariantList ReliabilityController::getLogEntries(const QString &subsystem)
              << "SA: Currently tracking 14 contacts (10 friendly, 4 neutral).";
     }
     return logs;
+}
+
+QVariantList ReliabilityController::getLruDetails(const QString &subsystem)
+{
+    QVariantList list;
+
+    // Check if the database connection is open and active
+    QSqlDatabase db = QSqlDatabase::database();
+    bool dbQuerySuccess = false;
+
+    if (db.isOpen()) {
+        QSqlQuery query;
+        query.prepare("SELECT name, serial_number, health, temp FROM lru_details WHERE subsystem = :subsystem ORDER BY id ASC");
+        query.bindValue(":subsystem", subsystem);
+
+        if (query.exec()) {
+            dbQuerySuccess = true;
+            while (query.next()) {
+                QVariantMap item;
+                item["name"] = query.value(0).toString();
+                item["serialNumber"] = query.value(1).toString();
+                item["health"] = query.value(2).toString();
+                item["temp"] = query.value(3).toInt();
+                list.append(item);
+            }
+        } else {
+            qWarning() << "Failed to query lru_details:" << query.lastError().text();
+        }
+    }
+
+    // Fallback if DB query was not successful or returned empty
+    if (!dbQuerySuccess || list.isEmpty()) {
+        qDebug() << "SQL connection offline or query empty. Loading local fallback LRU details for subsystem:" << subsystem;
+        if (subsystem == "TFCS") {
+            list << QVariantMap{{"name", "Ballistic Compute Unit"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 34}}
+                 << QVariantMap{{"name", "Dual-Channel Comm Link"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 38}}
+                 << QVariantMap{{"name", "Direct Fire Link Relay"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 42}};
+        } else if (subsystem == "WCS") {
+            list << QVariantMap{{"name", "Missile Launch Controller"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 34}}
+                 << QVariantMap{{"name", "Safe-Arm Board"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 38}}
+                 << QVariantMap{{"name", "Secondary Power Supply Block"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 42}};
+        } else if (subsystem == "SIGINT") {
+            list << QVariantMap{{"name", "RF Processing Matrix"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 34}}
+                 << QVariantMap{{"name", "Spectral Scanning Module"}, {"serialNumber", "SN-84221"}, {"health", "FAULTED"}, {"temp", 52}}
+                 << QVariantMap{{"name", "Backup Thermal Shield"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 42}};
+        } else if (subsystem == "NAVSUITE") {
+            list << QVariantMap{{"name", "Gyroscopic IMU alignment unit"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 34}}
+                 << QVariantMap{{"name", "Satellite Triangulation Module"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 35}}
+                 << QVariantMap{{"name", "Drift Compensation Board"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 33}};
+        } else if (subsystem == "RADAR") {
+            list << QVariantMap{{"name", "Active Transmitter Phase Matrix"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 45}}
+                 << QVariantMap{{"name", "Sea-Clutter Rejection Unit"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 41}}
+                 << QVariantMap{{"name", "Transceiver Array Module"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 49}};
+        } else if (subsystem == "UCS") {
+            list << QVariantMap{{"name", "Audio/Data Cryptographic Unit"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 38}}
+                 << QVariantMap{{"name", "Secure Satellite Datalink Block"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 40}}
+                 << QVariantMap{{"name", "Antenna Transceiver Calibrator"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 39}};
+        } else if (subsystem == "SA") {
+            list << QVariantMap{{"name", "Tactical Situation Computer"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 36}}
+                 << QVariantMap{{"name", "Real-Time Track Correlation Unit"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 35}}
+                 << QVariantMap{{"name", "Threat Detection Evaluator"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 37}};
+        } else {
+            // Default generic fallback
+            list << QVariantMap{{"name", "Core Compute Block"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 34}}
+                 << QVariantMap{{"name", "Channel Interface Card"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 38}}
+                 << QVariantMap{{"name", "Power Distribution Bus"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 42}};
+        }
+    }
+
+    return list;
+}
+
+QVariantList ReliabilityController::getAllLogEntries()
+{
+    QVariantList allLogs;
+    for (const QString &sub : m_subsystems) {
+        QVariantList subLogs = getLogEntries(sub);
+        for (const auto &log : subLogs) {
+            allLogs.append(log.toString());
+        }
+    }
+    return allLogs;
 }

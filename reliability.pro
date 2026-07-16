@@ -11,11 +11,13 @@ SOURCES += \
         main.cpp \
         logincontroller.cpp \
         reliabilitycontroller.cpp \
+        csvparser.cpp \
         db/sqlconnection.cpp
 
 HEADERS += \
         logincontroller.h \
         reliabilitycontroller.h \
+        csvparser.h \
         db/sqlconnection.h
 
 RESOURCES += qml.qrc

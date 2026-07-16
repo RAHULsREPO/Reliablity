@@ -21,6 +21,7 @@ public:
 private:
     QSqlDatabase m_db;
     bool createUsersTable();
+    bool createLruTable();
     QString hashPassword(const QString &password) const;
 };
 

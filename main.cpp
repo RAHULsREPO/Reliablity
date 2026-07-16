@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include "logincontroller.h"
 #include "reliabilitycontroller.h"
+#include "csvparser.h"
 
 int main(int argc, char *argv[])
 {
@@ -22,6 +23,9 @@ int main(int argc, char *argv[])
 
     ReliabilityController reliabilityController;
     engine.rootContext()->setContextProperty("reliabilityController", &reliabilityController);
+
+    CsvParser csvParser;
+    engine.rootContext()->setContextProperty("csvParser", &csvParser);
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

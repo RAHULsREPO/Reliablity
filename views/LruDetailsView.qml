@@ -44,12 +44,7 @@ Rectangle {
                 spacing: 10
 
                 Repeater {
-                    model: {
-                        if (window.selectedSubsystem === "TFCS") return ["Ballistic Compute Unit", "Dual-Channel Comm Link", "Direct Fire Link Relay"];
-                        if (window.selectedSubsystem === "WCS") return ["Missile Launch Controller", "Safe-Arm Board", "Secondary Power Supply Block"];
-                        if (window.selectedSubsystem === "SIGINT") return ["RF Processing Matrix", "Spectral Scanning Module", "Backup Thermal Shield"];
-                        return ["Core Compute Block", "Channel Interface Card", "Power Distribution Bus"];
-                    }
+                    model: reliabilityController.getLruDetails(window.selectedSubsystem)
 
                     Rectangle {
                         Layout.fillWidth: true
@@ -64,26 +59,26 @@ Rectangle {
                             anchors.leftMargin: 10
                             anchors.rightMargin: 10
 
-                            Text { text: modelData; color: "#ffffff"; font.pixelSize: 12; font.bold: true; Layout.preferredWidth: 200; font.family: "Segoe UI" }
-                            Text { text: "SN-" + (83729 + index * 492); color: "#94a3b8"; font.pixelSize: 12; Layout.preferredWidth: 150; font.family: "Consolas" }
+                            Text { text: modelData.name; color: "#ffffff"; font.pixelSize: 12; font.bold: true; Layout.preferredWidth: 200; font.family: "Segoe UI" }
+                            Text { text: modelData.serialNumber; color: "#94a3b8"; font.pixelSize: 12; Layout.preferredWidth: 150; font.family: "Consolas" }
                             
                             RowLayout {
                                 Layout.preferredWidth: 150
                                 spacing: 6
                                 Rectangle {
                                     width: 8; height: 8; radius: 4
-                                    color: (window.subsystemStatus === "DEGRADED" && index === 1) ? "#f87171" : "#34d399"
+                                    color: modelData.health === "FAULTED" ? "#f87171" : "#34d399"
                                 }
                                 Text {
-                                    text: (window.subsystemStatus === "DEGRADED" && index === 1) ? "FAULTED" : "NOMINAL"
-                                    color: (window.subsystemStatus === "DEGRADED" && index === 1) ? "#f87171" : "#34d399"
+                                    text: modelData.health
+                                    color: modelData.health === "FAULTED" ? "#f87171" : "#34d399"
                                     font.pixelSize: 11; font.bold: true; font.family: "Segoe UI"
                                 }
                             }
 
                             Text {
-                                text: (34 + index * 4) + "°C";
-                                color: (34 + index * 4) > 42 ? "#fbbf24" : "#ffffff";
+                                text: modelData.temp + "°C"
+                                color: modelData.temp > 45 ? "#fbbf24" : "#ffffff"
                                 font.pixelSize: 12; font.family: "Segoe UI"
                             }
                         }

@@ -4,10 +4,14 @@
 LoginController::LoginController(QObject *parent)
     : QObject(parent), m_db(new SqlConnection(this))
 {
-    // Try to connect to PostgreSQL with default credentials
+    // Try to connect to PostgreSQL with default credentials, fallback to local SQLite if it fails
     bool connected = m_db->connectToDatabase("localhost", 5432, "security_db", "postgres", "postgres123");
     if (!connected) {
-        qWarning() << "Failed to connect to PostgreSQL database. Offline fallback activated.";
+        qWarning() << "Failed to connect to PostgreSQL database. Attempting local SQLite fallback.";
+        connected = m_db->connectToDatabase("", 0, "reliability.db", "", "");
+        if (!connected) {
+            qWarning() << "Failed to connect to local SQLite database. Offline fallback activated.";
+        }
     }
 }
 

@@ -3,11 +3,11 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 ScrollView {
-    anchors.fill: parent
+    id: gridScroll
     clip: true
 
     ColumnLayout {
-        width: parent.width - 20
+        width: gridScroll.availableWidth - 25
         spacing: 20
 
         Text {
@@ -20,7 +20,7 @@ ScrollView {
         }
 
         GridLayout {
-            columns: 3
+            columns: gridScroll.width > 900 ? 3 : (gridScroll.width > 600 ? 2 : 1)
             rowSpacing: 15
             columnSpacing: 15
             Layout.fillWidth: true
