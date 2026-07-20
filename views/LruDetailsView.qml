@@ -45,6 +45,7 @@ Rectangle {
 
                 Repeater {
                     model: reliabilityController.getLruDetails(window.selectedSubsystem)
+                    // qDebug()<<"";
 
                     Rectangle {
                         Layout.fillWidth: true

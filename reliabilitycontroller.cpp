@@ -165,9 +165,10 @@ QVariantList ReliabilityController::getLruDetails(const QString &subsystem)
                  << QVariantMap{{"name", "Dual-Channel Comm Link"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 38}}
                  << QVariantMap{{"name", "Direct Fire Link Relay"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 42}};
         } else if (subsystem == "WCS") {
-            list << QVariantMap{{"name", "Missile Launch Controller"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 34}}
+            list << QVariantMap{{"name", "Missile launch C.ontroller"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 34}}
                  << QVariantMap{{"name", "Safe-Arm Board"}, {"serialNumber", "SN-84221"}, {"health", "NOMINAL"}, {"temp", 38}}
-                 << QVariantMap{{"name", "Secondary Power Supply Block"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 42}};
+                 << QVariantMap{{"name", "1Secondary Power Supply Block"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 42}}
+                 << QVariantMap{{"name", "2Secory Power Supply Block"}, {"serialNumber", "SN-84713"}, {"health", "NOMINAL"}, {"temp", 42}};
         } else if (subsystem == "SIGINT") {
             list << QVariantMap{{"name", "RF Processing Matrix"}, {"serialNumber", "SN-83729"}, {"health", "NOMINAL"}, {"temp", 34}}
                  << QVariantMap{{"name", "Spectral Scanning Module"}, {"serialNumber", "SN-84221"}, {"health", "FAULTED"}, {"temp", 52}}

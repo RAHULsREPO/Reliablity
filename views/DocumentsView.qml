@@ -62,24 +62,16 @@ Rectangle {
 
                             Text { text: modelData.size; color: "#94a3b8"; font.pixelSize: 11; Layout.preferredWidth: 100 }
 
+                            // Place this inside the ColumnLayout in DocumentsView.qml:
                             Button {
-                                id: btnDownload
-                                implicitWidth: 80
-                                implicitHeight: 26
-                                background: Rectangle {
-                                    color: btnDownload.hovered ? "#0e172a" : "#070b13"
-                                    border.color: "#1e293b"
-                                    border.width: 1
-                                    radius: 4
-                                }
-                                contentItem: Text {
-                                    text: "DOWNLOAD"
-                                    color: "#00f0ff"; font.pixelSize: 10; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                                }
+                                id: importBtn
+                                text: "Import CSV Document"
                                 onClicked: {
-                                    // mock action
+                                    var records = csvParser.parseCsv("file:///C:/Users/sasth/Downloads/data.csv")
+                                    console.log("Imported document containing " + records.length + " items.")
                                 }
                             }
+
                         }
                     }
                 }
